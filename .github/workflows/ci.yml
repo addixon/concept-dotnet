@@ -31,6 +31,14 @@ jobs:
       with:
         versionSpec: '6.x'
 
+    - name: Ensure baseline version tag
+      run: |
+        if ! git tag -l 'v*' | grep -q .; then
+          FIRST_COMMIT=$(git rev-list --max-parents=0 HEAD)
+          git tag v0.1.0 "$FIRST_COMMIT"
+          echo "Created baseline tag v0.1.0 on initial commit $FIRST_COMMIT"
+        fi
+
     - name: Determine Version
       id: gitversion
       uses: gittools/actions/gitversion/execute@v4
