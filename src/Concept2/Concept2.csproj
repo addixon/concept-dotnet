@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <RootNamespace>Concept2</RootNamespace>
+    <AssemblyName>Concept2</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+
+    <!-- NuGet Package -->
+    <PackageId>Concept2.PM</PackageId>
+    <Version>1.0.0</Version>
+    <Authors>addixon</Authors>
+    <Description>A modern .NET library for communicating with Concept2 Performance Monitors (PM5) over USB and Bluetooth. Supports workout programming, real-time data streaming, and ad-hoc data retrieval using the CSAFE protocol.</Description>
+    <PackageTags>concept2;rowing;ergometer;pm5;csafe;bluetooth;ble;fitness;erg</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <RepositoryUrl>https://github.com/addixon/concept-dotnet</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
+  </ItemGroup>
+
+</Project>
