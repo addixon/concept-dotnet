@@ -1,7 +1,0 @@
-Test run for /home/runner/work/concept-dotnet/concept-dotnet/tests/Concept2.Tests/bin/Release/net10.0/Concept2.Tests.dll (.NETCoreApp,Version=v10.0)
-VSTest version 18.0.1 (x64)
-
-Starting test execution, please wait...
-A total of 1 test files matched the specified pattern.
-
-Passed!  - Failed:     0, Passed:    67, Skipped:     0, Total:    67, Duration: 265 ms - Concept2.Tests.dll (net10.0)
