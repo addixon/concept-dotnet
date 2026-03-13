@@ -12,16 +12,27 @@ jobs:
 
     permissions:
       packages: write
-      contents: read
+      contents: write
 
     steps:
     - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v5
       with:
         dotnet-version: '10.0.x'
         dotnet-quality: 'preview'
+
+    - name: Install GitVersion
+      uses: gittools/actions/gitversion/setup@v4
+      with:
+        versionSpec: '6.x'
+
+    - name: Determine Version
+      id: gitversion
+      uses: gittools/actions/gitversion/execute@v4
 
     - name: Restore dependencies
       run: dotnet restore
@@ -45,14 +56,20 @@ jobs:
         fi
 
     - name: Build
-      run: dotnet build --no-restore --configuration Release
+      run: dotnet build --no-restore --configuration Release -p:Version=${{ steps.gitversion.outputs.semVer }}
 
     - name: Test
       run: dotnet test --no-build --configuration Release
 
     - name: Pack NuGet package
-      run: dotnet pack --no-build --configuration Release --output ./nupkg
+      run: dotnet pack --no-build --configuration Release --output ./nupkg -p:PackageVersion=${{ steps.gitversion.outputs.semVer }}
 
     - name: Publish to GitHub Packages
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: dotnet nuget push ./nupkg/*.nupkg --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --api-key ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
+
+    - name: Create version tag
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        git tag v${{ steps.gitversion.outputs.semVer }}
+        git push origin v${{ steps.gitversion.outputs.semVer }}
