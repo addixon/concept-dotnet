@@ -1,17 +1,17 @@
 # Concept2.PM
 
-A modern .NET library for communicating with Concept2 Performance Monitors (PM3/PM4/PM5) over USB and Bluetooth Low Energy.
+A modern .NET library for communicating with Concept2 Performance Monitors (PM3/PM4/PM5) over USB, Bluetooth Low Energy, and ANT+.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## Features
 
-- **USB & Bluetooth** — same API regardless of connection type
-- **Real-time streaming** — subscribe to continuous rowing data at up to ~10 Hz (BLE) or configurable polling intervals (USB)
+- **USB, Bluetooth & ANT+** — same API regardless of connection type
+- **Real-time streaming** — subscribe to continuous rowing data at up to ~10 Hz (BLE), ~4 Hz (ANT+), or configurable polling intervals (USB)
 - **Workout programming** — configure fixed-time, fixed-distance, fixed-calorie, and interval workouts
 - **CSAFE protocol** — full frame builder/parser with byte stuffing, checksums, and PM-specific extensions
 - **Async & cancellable** — all I/O is `async`/`await` with `CancellationToken` support
-- **Pluggable transports** — bring your own HID or BLE library via simple interfaces
+- **Pluggable transports** — bring your own HID, BLE, or ANT+ library via simple interfaces
 
 ## Quick Start
 
@@ -28,7 +28,7 @@ await pm.ConnectAsync();
 var data = await pm.GetRowingDataAsync();
 Console.WriteLine($"Distance: {data.DistanceMeters}m  Pace: {data.CurrentPace}");
 
-// Stream continuous data (works with both USB and Bluetooth)
+// Stream continuous data (works with USB, Bluetooth, and ANT+)
 await foreach (var snapshot in pm.StreamRowingDataAsync(pollingInterval: TimeSpan.FromMilliseconds(200)))
 {
     Console.WriteLine($"{snapshot.ElapsedTime} | {snapshot.DistanceMeters}m | {snapshot.StrokeRate} spm");
@@ -48,6 +48,21 @@ await foreach (var snapshot in pm.StreamRowingDataAsync())
 }
 ```
 
+```csharp
+// ANT+ connection — same API, receive-only data streaming (PM5 only)
+await using var transport = new AntTransport(myAntDevice);
+await using var pm = new PerformanceMonitor(transport);
+await pm.ConnectAsync();
+
+// Identical streaming call — automatically uses ANT+ data page broadcasts
+await foreach (var snapshot in pm.StreamRowingDataAsync())
+{
+    Console.WriteLine($"{snapshot.ElapsedTime} | {snapshot.DistanceMeters}m | {snapshot.StrokeRate} spm");
+}
+```
+
+> **Note:** ANT+ is a receive-only data channel for real-time workout metrics. CSAFE command/response operations (e.g., `GetRowingDataAsync`, `SetWorkoutAsync`) require USB or Bluetooth.
+
 ## Installation
 
 ```bash
@@ -60,14 +75,16 @@ dotnet add package Concept2.PM
 
 ### Transport Layer
 
-The library uses a transport abstraction so you can plug in any USB HID or BLE library:
+The library uses a transport abstraction so you can plug in any USB HID, BLE, or ANT+ library:
 
 | Interface | Purpose |
 |-----------|---------|
-| `ITransport` | Unified send/receive interface used by both USB and Bluetooth |
+| `ITransport` | Unified send/receive interface used by USB, Bluetooth, and ANT+ |
 | `IBluetoothTransport` | Extends `ITransport` with BLE-specific GATT notification support |
+| `IAntTransport` | Extends `ITransport` with ANT+ data page broadcast streaming |
 | `IHidDevice` | Plug in any USB HID library (e.g. HidSharp, HidApi.Net) |
 | `IBleDevice` | Plug in any BLE library (e.g. Plugin.BLE, Windows.Devices.Bluetooth) |
+| `IAntDevice` | Plug in any ANT+ radio library (e.g. Dynastream/Garmin ANT+ USB stick SDK) |
 
 **Implementing `IHidDevice`:**
 
@@ -98,6 +115,19 @@ public class MyBleDevice : IBleDevice
 }
 ```
 
+**Implementing `IAntDevice`:**
+
+```csharp
+public class MyAntDevice : IAntDevice
+{
+    public bool IsConnected { get; private set; }
+    public Task ConnectAsync(CancellationToken ct = default) { /* open ANT+ channel */ }
+    public Task DisconnectAsync(CancellationToken ct = default) { /* close ANT+ channel */ }
+    public IAsyncEnumerable<byte[]> SubscribeAsync(CancellationToken ct = default) { /* receive data pages */ }
+    public void Dispose() { /* cleanup */ }
+}
+```
+
 ### USB Device IDs
 
 | Field | Value |
@@ -119,11 +149,31 @@ All Concept2 BLE services and characteristics use the base UUID `CE060000-43E5-1
 | General Status | `CE060031-43E5-11E4-916C-0800200C9A66` |
 | Additional Status | `CE060032-43E5-11E4-916C-0800200C9A66` |
 
+### ANT+ Constants
+
+The PM5 broadcasts using the ANT+ Fitness Equipment (FE-C) device profile:
+
+| Field | Value |
+|-------|-------|
+| Device Type | `17` (Fitness Equipment) |
+| Channel Period | `8192` (~4 Hz) |
+| RF Frequency | `57` (2457 MHz) |
+| Transmission Type | `5` |
+
+**ANT+ Data Pages:**
+
+| Page | Code | Description |
+|------|------|-------------|
+| General FE Data | `0x10` | Broadcast by all fitness equipment types |
+| General Metabolic Data | `0x12` | Caloric and metabolic data |
+| Rower Data | `0x16` | Stroke count, cadence, and power |
+| Nordic Skier Data | `0x18` | Stride count and cadence (SkiErg) |
+
 ## API Reference
 
 ### `IPerformanceMonitor`
 
-The primary interface for interacting with a PM. All methods share the same signature regardless of whether the underlying transport is USB or Bluetooth.
+The primary interface for interacting with a PM. All methods share the same signature regardless of whether the underlying transport is USB, Bluetooth, or ANT+.
 
 #### Connection
 
@@ -159,6 +209,7 @@ IAsyncEnumerable<RowingData> StreamRowingDataAsync(
 The `pollingInterval` parameter controls data rate:
 - **USB**: The library polls the PM via CSAFE commands at this interval (default: 200ms)
 - **Bluetooth**: BLE notifications are pushed by the PM; this interval acts as a minimum throttle between yielded snapshots (default: unthrottled — every notification is yielded)
+- **ANT+**: ANT+ data page broadcasts are received from the PM; this interval acts as a minimum throttle between yielded snapshots (default: unthrottled — every broadcast is yielded)
 
 #### Workout Programming
 
@@ -198,9 +249,15 @@ await pm.GoReadyAsync(); // Transition PM to ready state
 // Check if a BLE device is a Concept2 PM
 bool isConcept2 = PerformanceMonitorDiscovery.IsConcept2Device(advertisedServiceUuids);
 
+// Check if an ANT+ device is a Concept2 PM
+bool isConcept2Ant = PerformanceMonitorDiscovery.IsConcept2AntDevice(antDeviceType);
+
 // USB identification
 int vendorId = PerformanceMonitorDiscovery.UsbVendorId;   // 0x17A4
 int productId = PerformanceMonitorDiscovery.UsbProductId;  // 0x0001
+
+// ANT+ identification
+byte antDeviceType = PerformanceMonitorDiscovery.AntFitnessEquipmentDeviceType; // 17
 ```
 
 ## Data Models
@@ -235,7 +292,9 @@ int productId = PerformanceMonitorDiscovery.UsbProductId;  // 0x0001
 | `PeakForceNewtons` | `double` | Peak force during drive |
 | `AverageForceNewtons` | `double` | Average force during drive |
 | `WorkPerStrokeJoules` | `double` | Work done per stroke |
+| `ImpulseForceNewtonSeconds` | `double` | Impulse force of the stroke |
 | `ForceCurve` | `int[]?` | Force curve data points |
+| `Timestamp` | `DateTimeOffset` | When this stroke data was captured |
 
 ## CSAFE Protocol
 
@@ -270,6 +329,7 @@ if (response.Data.TryGetValue("GetTWork", out var twork))
 - [PM5 Bluetooth Smart Communication Interface Definition](https://www.concept2.nl/files/pdf/us/monitors/PM5_BluetoothSmartInterfaceDefinition.pdf)
 - [PM5 CSAFE Communication Definition](https://www.concept2.sg/files/pdf/us/monitors/PM5_CSAFECommunicationDefinition.pdf)
 - [Concept2 Software Development Resources](https://www.concept2.com/service/software/software-development)
+- [ANT+ Fitness Equipment Device Profile](https://www.thisisant.com/developer/ant-plus/device-profiles/#tabs-Fitness+Equipment)
 
 ## License
 
