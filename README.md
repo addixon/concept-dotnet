@@ -332,6 +332,10 @@ if (response.Data.TryGetValue("GetTWork", out var twork))
 - [Concept2 Software Development Resources](https://www.concept2.com/service/software/software-development)
 - [ANT+ Fitness Equipment Device Profile](https://www.thisisant.com/developer/ant-plus/device-profiles/#tabs-Fitness+Equipment)
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, coding conventions, and the release process.
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
