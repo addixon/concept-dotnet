@@ -46,6 +46,8 @@ jobs:
           branches:
             main:
               label: ''
+            release:
+              label: ''
 
     - name: Build
       run: dotnet build --configuration Release -p:Version=${{ steps.gitversion.outputs.semVer }} -p:ContinuousIntegrationBuild=true
