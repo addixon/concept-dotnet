@@ -142,7 +142,7 @@ ErgNet/
 
 ## CI/CD
 
-- **ci.yml**: Triggers on push/PR to `main` and `release/*`. Builds, tests, scans for vulnerabilities, packs, and publishes unlisted pre-release to NuGet.org.
+- **ci.yml**: Triggers on push/PR to `main` and `release/*`. Builds, tests, scans for vulnerabilities, and packs on every run. Publishes unlisted pre-release to NuGet.org **only on push** (merged PRs), not on pull request events.
 - **promote.yml**: Manual trigger. Builds, tests, packs, publishes stable to NuGet.org and GitHub Packages, creates a git tag.
 - **OIDC trusted publishing**: Uses `NuGet/login@v1` — no API keys stored as secrets.
 - **Dependabot**: Weekly updates for NuGet packages and GitHub Actions.

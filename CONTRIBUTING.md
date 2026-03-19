@@ -162,7 +162,7 @@ Semantic versioning is handled automatically by [GitVersion](https://gitversion.
 
 | Workflow | Trigger | Actions |
 |----------|---------|---------|
-| **CI/CD** (`ci.yml`) | Push to `main`/`release/*`, PRs | Build → Test → Security scan → Pack → Publish (unlisted pre-release) |
+| **CI/CD** (`ci.yml`) | Push to `main`/`release/*`, PRs | Build → Test → Security scan → Pack. On push (merge) only: publish unlisted pre-release. |
 | **Promote** (`promote.yml`) | Manual dispatch | Build → Test → Pack → Publish to NuGet.org + GitHub Packages → Tag |
 
 Both workflows use **OIDC trusted publishing** via `NuGet/login@v1` — no API keys are stored as secrets.
