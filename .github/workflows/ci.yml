@@ -82,6 +82,7 @@ jobs:
       semVer: ${{ steps.gitversion.outputs.semVer }}
 
   publish-preproduction:
+    if: github.event_name == 'push'
     needs: build
     runs-on: ubuntu-latest
     environment: preproduction

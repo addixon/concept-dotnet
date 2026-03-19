@@ -1,0 +1,62 @@
+# ErgNet — Cline Rules
+
+# For the complete agent guide, see docs/agent-instructions.md
+
+## Project
+
+- .NET 10 library (`net10.0`) for Concept2 PM3/PM4/PM5 ergometer communication
+- NuGet package: `ErgNet` | Root namespace: `ErgNet` | Solution: `ErgNet.slnx`
+- "ErgNet" = the library; "Concept2" = the hardware manufacturer (never swap them)
+
+## Commands
+
+- Build: `dotnet build --configuration Release`
+- Test: `dotnet test tests/ErgNet.Tests/ErgNet.Tests.csproj --logger "console;verbosity=detailed"`
+- Pack: `dotnet pack --configuration Release --output ./nupkg`
+- All warnings are errors (`TreatWarningsAsErrors` enabled)
+
+## Code Style
+
+- File-scoped namespaces: `namespace ErgNet;`
+- `var` when type is apparent; expression-bodied members for one-liners
+- 4-space indentation, LF line endings, UTF-8
+- Sort usings with `System` first; follow `.editorconfig`
+- All public types/members require XML doc comments
+- Use `<inheritdoc />` on interface implementations
+
+## Patterns
+
+- Async/await with `CancellationToken` on all I/O methods
+- `IAsyncEnumerable<T>` with `[EnumeratorCancellation]` for streaming
+- `SemaphoreSlim` guards concurrent transport access
+- `Channel<T>` merges BLE notification streams
+- `ObjectDisposedException.ThrowIf` at start of public methods
+- `ArgumentNullException.ThrowIfNull` for null checks
+- Transport abstraction: users implement `IHidDevice`/`IBleDevice`/`IAntDevice`
+
+## Testing
+
+- xUnit 2.9.3 with `MethodName_Scenario_ExpectedBehavior` naming
+- Hand-written fakes over mocking frameworks
+- `using Xunit;` is global via `.csproj` — do not add to test files
+- Byte-level comments in protocol tests; test paths mirror source paths
+
+## Architecture
+
+- Unified `IPerformanceMonitor` API regardless of transport
+- USB: CSAFE polling | BLE: GATT notifications | ANT+: FE-C broadcasts (receive-only)
+- PM commands wrapped in `SetUserCfg1` (0x1A); multiple coalesced under single wrapper
+- ANT+ uses 8-bit rollover counters (`RolloverCounterMax = 256`)
+
+## Error Handling
+
+- `ArgumentException` for invalid configs
+- `NotSupportedException` for unsupported transport operations (e.g., CSAFE over ANT+)
+- `InvalidOperationException` for state errors
+- `CsafeFrameException` for protocol errors
+
+## Versioning
+
+- GitVersion 6.x + Conventional Commits (feat: = minor, fix: = patch, feat!: = major)
+- main → `alpha`, release/* → `rc`, production → stable (via manual promote)
+- No hardcoded version in `.csproj`
