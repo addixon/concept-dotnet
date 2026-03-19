@@ -247,7 +247,7 @@ Navigate to **Settings → Environments → production → Environment secrets**
 ### 4. Register the Certificate on NuGet.org
 
 1. Go to [NuGet.org → Account Settings → Certificates](https://www.nuget.org/account/certificates) and upload the `.cer` file exported in step 2.
-2. On the [ErgNet package page → Manage](https://www.nuget.org/packages/ErgNet/Manage), verify the package owner is set to `ergSoft`.
+2. On the [ErgNet package page → Manage](https://www.nuget.org/packages/ErgNet/Manage), verify the package owner is set to `ergSoft`. If the `ergSoft` organization does not yet own the package, transfer ownership via **Manage Owners** on the package page. If the package has not been published yet, the owner will be set on first publish.
 
 ### 5. Clean Up
 
