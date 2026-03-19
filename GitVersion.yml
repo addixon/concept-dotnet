@@ -10,7 +10,7 @@ branches:
     is-main-branch: true
     increment: Patch
     mode: ContinuousDeployment
-    label: ''
+    label: alpha
   pull-request:
     regex: ^(pull|pull\-requests|pr)[/-]
     label: alpha
