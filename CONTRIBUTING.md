@@ -177,7 +177,7 @@ Configure the following secrets in the `production` GitHub environment:
 
 | Secret | Description |
 |--------|-------------|
-| `NUGET_SIGNING_CERT` | Base64-encoded `.pfx` (PKCS #12) code signing certificate issued to `ergSoft`. Generate with `base64 -w0 cert.pfx` (Linux) or `base64 -i cert.pfx` (macOS). |
+| `NUGET_SIGNING_CERT` | Base64-encoded `.pfx` (PKCS #12) code signing certificate issued to `ergSoft`. Generate with `base64 -w0 cert.pfx` (Linux) or `base64 -i cert.pfx | tr -d '\n'` (macOS). |
 | `NUGET_SIGNING_CERT_PASSWORD` | Password for the `.pfx` file. |
 
 ### NuGet.org Certificate Registration

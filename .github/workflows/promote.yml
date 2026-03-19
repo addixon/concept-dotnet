@@ -76,7 +76,6 @@ jobs:
         SIGNING_CERT_PASSWORD: ${{ secrets.NUGET_SIGNING_CERT_PASSWORD }}
       run: |
         CERT_PATH=$(mktemp "${RUNNER_TEMP}/cert-XXXXXX.pfx")
-        chmod 600 "$CERT_PATH"
         echo "$SIGNING_CERT" | base64 --decode > "$CERT_PATH"
         dotnet nuget sign ./nupkg/*.nupkg \
           --type repository \
@@ -84,7 +83,7 @@ jobs:
           --package-owner ergSoft \
           --certificate-path "$CERT_PATH" \
           --certificate-password "$SIGNING_CERT_PASSWORD" \
-          --timestamper http://timestamp.digicert.com \
+          --timestamper https://timestamp.digicert.com \
           --overwrite
         rm -f "$CERT_PATH"
 
