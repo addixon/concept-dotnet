@@ -1,0 +1,64 @@
+name: Promote to Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'NuGet package version to promote (e.g., 0.2.0 or 0.2.0-alpha.1)'
+        required: true
+        type: string
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    environment: production
+
+    permissions:
+      id-token: write
+      packages: write
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+        fetch-tags: true
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: '10.0.x'
+        dotnet-quality: 'preview'
+
+    - name: NuGet login
+      uses: NuGet/login@v1
+      id: login
+      with:
+        user: ${{ secrets.NUGET_USER }}
+
+    - name: Relist on NuGet.org
+      run: |
+        curl -fS -X POST "https://www.nuget.org/api/v2/package/ErgNet/${{ inputs.version }}" \
+          -H "X-NuGet-ApiKey: ${{ steps.login.outputs.NUGET_API_KEY }}"
+
+    - name: Download package from NuGet.org
+      run: |
+        VERSION="${{ inputs.version }}"
+        LOWER_VERSION=$(echo "$VERSION" | tr '[:upper:]' '[:lower:]')
+        curl -fSL -o "ErgNet.${VERSION}.nupkg" \
+          "https://api.nuget.org/v3-flatcontainer/ergnet/${LOWER_VERSION}/ergnet.${LOWER_VERSION}.nupkg"
+
+    - name: Publish to GitHub Packages
+      run: dotnet nuget push "ErgNet.${{ inputs.version }}.nupkg" --source "https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json" --api-key ${{ secrets.GITHUB_TOKEN }} --skip-duplicate
+
+    - name: Create version tag
+      run: |
+        TAG="v${{ inputs.version }}"
+        if git rev-parse "$TAG" >/dev/null 2>&1; then
+          echo "Tag $TAG already exists, skipping."
+        else
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$TAG" -m "Release $TAG"
+          git push origin "$TAG"
+        fi
