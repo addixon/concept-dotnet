@@ -114,6 +114,19 @@ public class PerformanceMonitorTests
     }
 
     [Fact]
+    public async Task GetRowingDataAsync_WithUsbTransport_RequestsDragFactorCommand()
+    {
+        var transport = new FakeUsbTransport(responseCount: 1);
+        await using var pm = new PerformanceMonitor(transport);
+        await pm.ConnectAsync();
+
+        _ = await pm.GetRowingDataAsync();
+
+        Assert.NotNull(transport.LastSentFrame);
+        Assert.Contains(CsafeCommands.PmShort.PM_GetDragFactor, transport.LastSentFrame);
+    }
+
+    [Fact]
     public async Task GoReadyAsync_WorksWithBothTransports()
     {
         var usbTransport = new FakeUsbTransport(responseCount: 1);
@@ -224,6 +237,7 @@ public class PerformanceMonitorTests
 
         public bool IsConnected { get; private set; }
         public int SendCallCount { get; private set; }
+        public byte[]? LastSentFrame { get; private set; }
 
         public Task ConnectAsync(CancellationToken cancellationToken = default)
         {
@@ -240,6 +254,7 @@ public class PerformanceMonitorTests
         public Task SendAsync(ReadOnlyMemory<byte> data, CancellationToken cancellationToken = default)
         {
             SendCallCount++;
+            LastSentFrame = data.ToArray();
             return Task.CompletedTask;
         }
 
